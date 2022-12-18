@@ -113,7 +113,7 @@ void RenderInterface()
 					if (request.m_url.Contains("[") || request.m_url.Contains("{")) {
 						curl += " -g";
 					}
-					curl += " " + request.m_url;
+					curl += " \"" + request.m_url + "\"";
 					IO::SetClipboard(curl);
 				}
 
