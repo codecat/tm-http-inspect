@@ -1,0 +1,6 @@
+[meta]
+name = "Http Inspector"
+author = "Miss"
+category = "Utilities"
+version = "1.2.2"
+blocks = [ "Plugin_HttpInspect" ]
