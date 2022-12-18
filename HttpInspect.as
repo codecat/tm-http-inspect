@@ -27,7 +27,7 @@ RequestInfo@ AddRequestInfo(const string &in method)
 
 string CommandLineSafe(const string &in str)
 {
-	return str.Replace("\\", "\\\\").Replace("'", "'\''";
+	return str.Replace("\\", "\\\\").Replace("'", "'\\''");
 }
 
 void RenderInterface()
