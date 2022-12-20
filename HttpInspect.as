@@ -27,7 +27,7 @@ RequestInfo@ AddRequestInfo(const string &in method)
 
 string CommandLineSafe(const string &in str)
 {
-	return str.Replace("\\", "\\\\").Replace("\"", "\\\"");
+	return str.Replace("\\", "\\\\").Replace("'", "'\\''");
 }
 
 void RenderInterface()
@@ -104,16 +104,16 @@ void RenderInterface()
 					if (request.m_headers != "") {
 						auto lines = request.m_headers.Split("\n");
 						for (uint j = 0; j < lines.Length; j++) {
-							curl += " -H \"" + CommandLineSafe(lines[j]) + "\"";
+							curl += " -H '" + CommandLineSafe(lines[j]) + "'";
 						}
 					}
 					if (request.m_resource != "") {
-						curl += " -d \"" + CommandLineSafe(request.m_resource) + "\"";
+						curl += " -d '" + CommandLineSafe(request.m_resource) + "'";
 					}
 					if (request.m_url.Contains("[") || request.m_url.Contains("{")) {
 						curl += " -g";
 					}
-					curl += " " + request.m_url;
+					curl += " '" + CommandLineSafe(request.m_url) + "'";
 					IO::SetClipboard(curl);
 				}
 
