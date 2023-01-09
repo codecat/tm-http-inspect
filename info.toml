@@ -2,5 +2,5 @@
 name = "Http Inspector"
 author = "Miss"
 category = "Utilities"
-version = "1.2.2"
+version = "1.2.3"
 blocks = [ "Plugin_HttpInspect" ]
