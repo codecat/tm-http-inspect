@@ -43,11 +43,13 @@ void RenderInterface()
 			g_requests.RemoveRange(0, g_requests.Length);
 		}
 
+		float scale = UI::GetScale();
+
 		if (UI::BeginTable("Requests", 4, UI::TableFlags::Resizable)) {
-			UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed, 50);
-			UI::TableSetupColumn("Method", UI::TableColumnFlags::WidthFixed, 80);
+			UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed, 50 * scale);
+			UI::TableSetupColumn("Method", UI::TableColumnFlags::WidthFixed, 80 * scale);
 			UI::TableSetupColumn("URL", UI::TableColumnFlags::WidthStretch);
-			UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed, 250);
+			UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed, 250 * scale);
 			UI::TableHeadersRow();
 
 			for (int i = int(g_requests.Length - 1); i >= 0; i--) {
