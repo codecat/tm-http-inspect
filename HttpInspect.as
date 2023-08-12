@@ -27,11 +27,10 @@ RequestInfo@ AddRequestInfo(const string &in method)
 
 string CommandLineSafe(const string &in str)
 {
-#if WINDOWS 
-	return "\"" + str.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
-#elif LINUX
-	return "'" + str.Replace("\\", "\\\\").Replace("'", "'\\''") + "'";
-#endif
+	if (Setting_UseDoubleQuotes)
+		return "\"" + str.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+	else
+		return "'" + str.Replace("\\", "\\\\").Replace("'", "'\\''") + "'";
 }
 
 void RenderInterface()
