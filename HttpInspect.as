@@ -48,9 +48,9 @@ void RenderInterface()
 
 		float scale = UI::GetScale();
 
-		if (UI::BeginTable("Requests", 4, UI::TableFlags::Resizable)) {
-			UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed, 50 * scale);
-			UI::TableSetupColumn("Method", UI::TableColumnFlags::WidthFixed, 80 * scale);
+		if (UI::BeginTable("Requests", 4, UI::TableFlags::Resizable | UI::TableFlags::ScrollY)) {
+			UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed, 100 * scale);
+			UI::TableSetupColumn("Method", UI::TableColumnFlags::WidthFixed, 50 * scale);
 			UI::TableSetupColumn("URL", UI::TableColumnFlags::WidthStretch);
 			UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed, 250 * scale);
 			UI::TableHeadersRow();
@@ -63,7 +63,7 @@ void RenderInterface()
 
 				// Time
 				UI::TableSetColumnIndex(0);
-				UI::Text(Time::Stamp - request.m_time + "s");
+				UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")");
 
 				// Method
 				UI::TableSetColumnIndex(1);
