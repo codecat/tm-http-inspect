@@ -223,6 +223,12 @@ void Main()
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePostFile", FuncCreatePostFile);
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePut", FuncCreatePut);
 
+	if (Setting_ImmediateCapture) {
+		g_capturing = true;
+		g_windowVisible = true;
+		Setting_ImmediateCapture = false;
+	}
+
 	while (true) {
 		yield();
 	}
