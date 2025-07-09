@@ -335,6 +335,7 @@ bool FuncCreatePostFile(CMwStack &in stack)
 	return true;
 }
 
+#if TMNEXT
 bool FuncCreatePut(CMwStack &in stack)
 {
 	if (!g_capturing) {
@@ -349,6 +350,7 @@ bool FuncCreatePut(CMwStack &in stack)
 
 	return true;
 }
+#endif
 
 bool FuncDestroy(CMwStack &in stack)
 {
@@ -370,7 +372,9 @@ void Main()
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePost", FuncCreatePost);
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePost2", FuncCreatePost);
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePostFile", FuncCreatePostFile);
+#if TMNEXT
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePut", FuncCreatePut);
+#endif
 
 	Dev::InterceptProc("CNetScriptHttpManager", "Destroy", FuncDestroy);
 
@@ -390,7 +394,9 @@ void OnDestroyed()
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost");
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost2");
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePostFile");
+#if TMNEXT
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePut");
+#endif
 
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "Destroy");
 }
