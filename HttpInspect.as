@@ -1,3 +1,5 @@
+const string title = "\\$9cf" + Icons::Search + "\\$z Http Inspector";
+
 array<RequestInfo@> g_requests;
 array<DestroyedRequestInfo@> g_destroyed;
 bool g_capturing;
@@ -78,7 +80,7 @@ void RenderInterface()
 		return;
 	}
 
-	if (UI::Begin("Http Inspector", Setting_WindowVisible)) {
+	if (UI::Begin(title, Setting_WindowVisible)) {
 		g_capturing = UI::Checkbox("Capturing", g_capturing);
 
 		UI::SameLine();
@@ -269,7 +271,7 @@ void TabDestroyed()
 
 void RenderMenu()
 {
-	if (UI::MenuItem("\\$9cf" + Icons::Search + "\\$z Http Inspector", "", Setting_WindowVisible)) {
+	if (UI::MenuItem(title, "", Setting_WindowVisible)) {
 		Setting_WindowVisible = !Setting_WindowVisible;
 	}
 }
