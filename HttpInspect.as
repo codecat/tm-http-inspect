@@ -375,8 +375,18 @@ void Main()
 		g_windowVisible = true;
 		Setting_ImmediateCapture = false;
 	}
+}
 
-	while (true) {
-		yield();
-	}
+void OnDestroyed()
+{
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreateGet");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreateGet2");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreateGet3");
+
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost2");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePostFile");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePut");
+
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "Destroy");
 }
