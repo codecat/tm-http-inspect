@@ -2,8 +2,6 @@ array<RequestInfo@> g_requests;
 array<DestroyedRequestInfo@> g_destroyed;
 bool g_capturing;
 
-bool g_windowVisible;
-
 class RequestInfo
 {
 	int64 m_time;
@@ -76,12 +74,16 @@ string CommandLineSafe(const string &in str)
 
 void RenderInterface()
 {
-	if (!g_windowVisible) {
+	if (!Setting_WindowVisible) {
 		return;
 	}
 
-	if (UI::Begin("Http Inspector", g_windowVisible)) {
+	if (UI::Begin("Http Inspector", Setting_WindowVisible)) {
 		g_capturing = UI::Checkbox("Capturing", g_capturing);
+
+		UI::SameLine();
+		Setting_ImmediateCapture = UI::Checkbox("Start capturing immediately on next game boot", Setting_ImmediateCapture);
+		UI::SetItemTooltip("In case there are requests you want to catch before you can open the plugin window manually");
 
 		UI::BeginTabBar("##tabs");
 		TabCreated();
@@ -119,7 +121,7 @@ void TabCreated()
 			// Time
 			UI::TableSetColumnIndex(0);
 			UI::AlignTextToFramePadding();
-			UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")");
+			UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")    ");
 
 			// Method
 			UI::TableSetColumnIndex(1);
@@ -218,7 +220,7 @@ void TabDestroyed()
 			// Time
 			UI::TableSetColumnIndex(0);
 			UI::AlignTextToFramePadding();
-			UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")");
+			UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")    ");
 
 			// Status code
 			UI::TableSetColumnIndex(1);
@@ -267,8 +269,8 @@ void TabDestroyed()
 
 void RenderMenu()
 {
-	if (UI::MenuItem("\\$9cf" + Icons::Search + "\\$z Http Inspector", "", g_windowVisible)) {
-		g_windowVisible = !g_windowVisible;
+	if (UI::MenuItem("\\$9cf" + Icons::Search + "\\$z Http Inspector", "", Setting_WindowVisible)) {
+		Setting_WindowVisible = !Setting_WindowVisible;
 	}
 }
 
@@ -372,7 +374,7 @@ void Main()
 
 	if (Setting_ImmediateCapture) {
 		g_capturing = true;
-		g_windowVisible = true;
+		Setting_WindowVisible = true;
 		Setting_ImmediateCapture = false;
 	}
 }
