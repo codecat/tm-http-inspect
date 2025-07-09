@@ -320,6 +320,7 @@ bool FuncCreatePost(CMwStack &in stack)
 	return true;
 }
 
+#if TMNEXT || MP4
 bool FuncCreatePostFile(CMwStack &in stack)
 {
 	if (!g_capturing) {
@@ -334,6 +335,7 @@ bool FuncCreatePostFile(CMwStack &in stack)
 
 	return true;
 }
+#endif
 
 #if TMNEXT
 bool FuncCreatePut(CMwStack &in stack)
@@ -371,7 +373,9 @@ void Main()
 
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePost", FuncCreatePost);
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePost2", FuncCreatePost);
+#if TMNEXT || MP4
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePostFile", FuncCreatePostFile);
+#endif
 #if TMNEXT
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePut", FuncCreatePut);
 #endif
@@ -393,7 +397,9 @@ void OnDestroyed()
 
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost");
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost2");
+#if TMNEXT || MP4
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePostFile");
+#endif
 #if TMNEXT
 	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePut");
 #endif
