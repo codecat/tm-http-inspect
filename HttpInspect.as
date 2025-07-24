@@ -80,7 +80,7 @@ void RenderInterface()
 		return;
 	}
 
-	if (UI::Begin(title, Setting_WindowVisible)) {
+	if (UI::Begin(title, Setting_WindowVisible, UI::WindowFlags::None)) {
 		g_capturing = UI::Checkbox("Capturing", g_capturing);
 
 		UI::SameLine();
