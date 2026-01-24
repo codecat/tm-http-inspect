@@ -1,4 +1,4 @@
-const string title = "\\$9cf" + Icons::Search + "\\$z Http Inspector";
+const string title = "\\$9cf" + Icons::Search + "\\$z Http Inspector###Http Inspector";
 
 array<RequestInfo@> g_requests;
 array<DestroyedRequestInfo@> g_destroyed;
