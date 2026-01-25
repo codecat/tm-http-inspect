@@ -1,4 +1,4 @@
-const string title = "\\$9cf" + Icons::Search + "\\$z Http Inspector###Http Inspector";
+const string PLUGIN_TITLE = "\\$9cf" + Icons::Search + "\\$z Http Inspector###Http Inspector";
 
 array<RequestInfo@> g_requests;
 array<DestroyedRequestInfo@> g_destroyed;
@@ -271,7 +271,7 @@ void TabDestroyed()
 
 void RenderMenu()
 {
-	if (UI::MenuItem(title, "", Setting_WindowVisible)) {
+	if (UI::MenuItem(PLUGIN_TITLE, "", Setting_WindowVisible)) {
 		Setting_WindowVisible = !Setting_WindowVisible;
 	}
 }
