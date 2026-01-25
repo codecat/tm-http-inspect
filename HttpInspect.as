@@ -1,7 +1,8 @@
-array<RequestInfo@> g_requests;
-bool g_capturing;
+const string PLUGIN_TITLE = "\\$9cf" + Icons::Search + "\\$z Http Inspector###Http Inspector";
 
-bool g_windowVisible;
+array<RequestInfo@> g_requests;
+array<DestroyedRequestInfo@> g_destroyed;
+bool g_capturing;
 
 class RequestInfo
 {
@@ -16,12 +17,52 @@ class RequestInfo
 	string m_filename; // For file POST requests
 }
 
+class DestroyedRequestInfo
+{
+	int64 m_time;
+
+	string m_url;
+	string m_result;
+	uint m_statusCode;
+	bool m_isCompleted;
+
+	DestroyedRequestInfo(CNetScriptHttpRequest@ request)
+	{
+		m_time = Time::Stamp;
+
+		m_url = request.Url;
+		m_result = request.Result;
+		m_statusCode = request.StatusCode;
+		m_isCompleted = request.IsCompleted;
+	}
+
+	Json::Value@ ToJson()
+	{
+		try {
+			return Json::Parse(m_result);
+		} catch {
+			return null;
+		}
+	}
+}
+
 RequestInfo@ AddRequestInfo(const string &in method)
 {
 	auto ret = RequestInfo();
 	ret.m_time = Time::Stamp;
 	ret.m_method = method;
 	g_requests.InsertLast(ret);
+	return ret;
+}
+
+DestroyedRequestInfo@ AddDestroyedRequestInfo(CNetScriptHttpRequest@ request)
+{
+	if (request is null) {
+		return null;
+	}
+
+	auto ret = DestroyedRequestInfo(request);
+	g_destroyed.InsertLast(ret);
 	return ret;
 }
 
@@ -35,106 +76,203 @@ string CommandLineSafe(const string &in str)
 
 void RenderInterface()
 {
-	if (!g_windowVisible) {
+	if (!Setting_WindowVisible) {
 		return;
 	}
 
-	if (UI::Begin("Http Inspector", g_windowVisible)) {
+	if (UI::Begin(PLUGIN_TITLE, Setting_WindowVisible)) {
 		g_capturing = UI::Checkbox("Capturing", g_capturing);
+
 		UI::SameLine();
-		if (UI::Button("Clear")) {
-			g_requests.RemoveRange(0, g_requests.Length);
-		}
+		Setting_ImmediateCapture = UI::Checkbox("Start capturing immediately on next game boot", Setting_ImmediateCapture);
+		UI::SetItemTooltip("In case there are requests you want to catch before you can open the plugin window manually");
 
-		float scale = UI::GetScale();
-
-		if (UI::BeginTable("Requests", 4, UI::TableFlags::Resizable)) {
-			UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed, 50 * scale);
-			UI::TableSetupColumn("Method", UI::TableColumnFlags::WidthFixed, 80 * scale);
-			UI::TableSetupColumn("URL", UI::TableColumnFlags::WidthStretch);
-			UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed, 250 * scale);
-			UI::TableHeadersRow();
-
-			for (int i = int(g_requests.Length - 1); i >= 0; i--) {
-				UI::TableNextRow();
-
-				auto request = g_requests[i];
-				UI::PushID(request);
-
-				// Time
-				UI::TableSetColumnIndex(0);
-				UI::Text(Time::Stamp - request.m_time + "s");
-
-				// Method
-				UI::TableSetColumnIndex(1);
-				UI::Text(request.m_method);
-
-				// URL
-				UI::TableSetColumnIndex(2);
-				UI::Text(request.m_url);
-
-				// Actions
-				UI::TableSetColumnIndex(3);
-				if (UI::Button(Icons::Clipboard + " URL")) {
-					IO::SetClipboard(request.m_url);
-				}
-
-				if (request.m_headers != "") {
-					UI::SameLine();
-					if (UI::Button(Icons::Clipboard + " Headers")) {
-						IO::SetClipboard(request.m_headers);
-					}
-				}
-
-				if (request.m_resource != "") {
-					UI::SameLine();
-					if (UI::Button(Icons::Clipboard + " Resource")) {
-						IO::SetClipboard(request.m_resource);
-					}
-				}
-
-				if (request.m_filename != "") {
-					UI::SameLine();
-					if (UI::Button(Icons::Clipboard + " Filename")) {
-						IO::SetClipboard(request.m_filename);
-					}
-				}
-
-				UI::SameLine();
-				if (UI::Button(Icons::CodeFork + " Curl")) {
-					string curl = "curl";
-					if (request.m_method != "GET") {
-						curl += " -X " + request.m_method;
-					}
-					if (request.m_headers != "") {
-						auto lines = request.m_headers.Split("\n");
-						for (uint j = 0; j < lines.Length; j++) {
-							curl += " -H " + CommandLineSafe(lines[j]);
-						}
-					}
-					if (request.m_resource != "") {
-						curl += " -d " + CommandLineSafe(request.m_resource);
-					}
-					if (request.m_url.Contains("[") || request.m_url.Contains("{")) {
-						curl += " -g";
-					}
-					curl += " " + CommandLineSafe(request.m_url);
-					IO::SetClipboard(curl);
-				}
-
-				UI::PopID();
-			}
-
-			UI::EndTable();
-		}
+		UI::BeginTabBar("##tabs");
+		TabCreated();
+		TabDestroyed();
+		UI::EndTabBar();
 	}
 	UI::End();
 }
 
+void TabCreated()
+{
+	if (!UI::BeginTabItem("Created")) {
+		return;
+	}
+
+	if (UI::Button(Icons::Times + " Clear")) {
+		g_requests.RemoveRange(0, g_requests.Length);
+	}
+
+	if (UI::BeginTable("Requests-Created", 4, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::SizingFixedFit)) {
+		UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(vec3(), 0.5f));
+		UI::TableSetupScrollFreeze(0, 1);
+		UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed);
+		UI::TableSetupColumn("Method", UI::TableColumnFlags::WidthFixed);
+		UI::TableSetupColumn("URL", UI::TableColumnFlags::WidthStretch);
+		UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed);
+		UI::TableHeadersRow();
+
+		for (int i = int(g_requests.Length - 1); i >= 0; i--) {
+			UI::TableNextRow();
+
+			auto request = g_requests[i];
+			UI::PushID(request);
+
+			// Time
+			UI::TableSetColumnIndex(0);
+			UI::AlignTextToFramePadding();
+			UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")    ");
+
+			// Method
+			UI::TableSetColumnIndex(1);
+			UI::AlignTextToFramePadding();
+			UI::Text(request.m_method);
+
+			// URL
+			UI::TableSetColumnIndex(2);
+			UI::AlignTextToFramePadding();
+			UI::Text(request.m_url);
+
+			// Actions
+			UI::TableSetColumnIndex(3);
+			if (UI::Button(Icons::Clipboard + " URL")) {
+				IO::SetClipboard(request.m_url);
+			}
+
+			if (request.m_headers != "") {
+				UI::SameLine();
+				if (UI::Button(Icons::Clipboard + " Headers")) {
+					IO::SetClipboard(request.m_headers);
+				}
+			}
+
+			if (request.m_resource != "") {
+				UI::SameLine();
+				if (UI::Button(Icons::Clipboard + " Resource")) {
+					IO::SetClipboard(request.m_resource);
+				}
+			}
+
+			if (request.m_filename != "") {
+				UI::SameLine();
+				if (UI::Button(Icons::Clipboard + " Filename")) {
+					IO::SetClipboard(request.m_filename);
+				}
+			}
+
+			UI::SameLine();
+			if (UI::Button(Icons::CodeFork + " Curl")) {
+				string curl = "curl";
+				if (request.m_method != "GET") {
+					curl += " -X " + request.m_method;
+				}
+				if (request.m_headers != "") {
+					auto lines = request.m_headers.Split("\n");
+					for (uint j = 0; j < lines.Length; j++) {
+						curl += " -H " + CommandLineSafe(lines[j]);
+					}
+				}
+				if (request.m_resource != "") {
+					curl += " -d " + CommandLineSafe(request.m_resource);
+				}
+				if (request.m_url.Contains("[") || request.m_url.Contains("{")) {
+					curl += " -g";
+				}
+				curl += " " + CommandLineSafe(request.m_url);
+				IO::SetClipboard(curl);
+			}
+
+			UI::PopID();
+		}
+
+		UI::PopStyleColor();
+		UI::EndTable();
+	}
+
+	UI::EndTabItem();
+}
+
+void TabDestroyed()
+{
+	if (!UI::BeginTabItem("Destroyed")) {
+		return;
+	}
+
+	if (UI::Button(Icons::Times + " Clear")) {
+		g_destroyed.RemoveRange(0, g_destroyed.Length);
+	}
+
+	if (UI::BeginTable("Requests-Destroyed", 4, UI::TableFlags::RowBg | UI::TableFlags::ScrollY | UI::TableFlags::SizingFixedFit)) {
+		UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(vec3(), 0.5f));
+		UI::TableSetupScrollFreeze(0, 1);
+		UI::TableSetupColumn("Time", UI::TableColumnFlags::WidthFixed);
+		UI::TableSetupColumn("Status", UI::TableColumnFlags::WidthFixed);
+		UI::TableSetupColumn("URL", UI::TableColumnFlags::WidthStretch);
+		UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed);
+		UI::TableHeadersRow();
+
+		for (int i = g_destroyed.Length - 1; i >= 0; i--) {
+			UI::TableNextRow();
+
+			auto request = g_destroyed[i];
+			UI::PushID(request);
+
+			// Time
+			UI::TableSetColumnIndex(0);
+			UI::AlignTextToFramePadding();
+			UI::Text(Time::FormatString("%X", request.m_time) + " (" + Time::Format((Time::Stamp - request.m_time) * 1000, false) + ")    ");
+
+			// Status code
+			UI::TableSetColumnIndex(1);
+			UI::AlignTextToFramePadding();
+			UI::Text(tostring(request.m_statusCode));
+
+			// URL
+			UI::TableSetColumnIndex(2);
+			UI::AlignTextToFramePadding();
+			UI::Text(request.m_url);
+
+			// Actions
+			UI::TableSetColumnIndex(3);
+			if (UI::Button(Icons::Clipboard + " URL")) {
+				IO::SetClipboard(request.m_url);
+			}
+
+			if (request.m_result != "") {
+				UI::SameLine();
+				if (UI::Button(Icons::Clipboard + " Result")) {
+					IO::SetClipboard(request.m_result);
+				}
+
+				if (request.m_result.StartsWith("[") || request.m_result.StartsWith("{")) {
+					UI::SameLine();
+					if (UI::Button(Icons::Clipboard + " Pretty")) {
+						Json::Value@ json = request.ToJson();
+						if (json !is null) {
+							IO::SetClipboard(Json::Write(json, true));
+						} else {
+							warn("result is not json data!");
+						}
+					}
+				}
+			}
+
+			UI::PopID();
+		}
+
+		UI::PopStyleColor();
+		UI::EndTable();
+	}
+
+	UI::EndTabItem();
+}
+
 void RenderMenu()
 {
-	if (UI::MenuItem("\\$9cf" + Icons::Search + "\\$z Http Inspector", "", g_windowVisible)) {
-		g_windowVisible = !g_windowVisible;
+	if (UI::MenuItem(PLUGIN_TITLE, "", Setting_WindowVisible)) {
+		Setting_WindowVisible = !Setting_WindowVisible;
 	}
 }
 
@@ -182,6 +320,7 @@ bool FuncCreatePost(CMwStack &in stack)
 	return true;
 }
 
+#if TMNEXT || MP4
 bool FuncCreatePostFile(CMwStack &in stack)
 {
 	if (!g_capturing) {
@@ -196,7 +335,9 @@ bool FuncCreatePostFile(CMwStack &in stack)
 
 	return true;
 }
+#endif
 
+#if TMNEXT
 bool FuncCreatePut(CMwStack &in stack)
 {
 	if (!g_capturing) {
@@ -211,6 +352,18 @@ bool FuncCreatePut(CMwStack &in stack)
 
 	return true;
 }
+#endif
+
+bool FuncDestroy(CMwStack &in stack)
+{
+	if (!g_capturing) {
+		return true;
+	}
+
+	AddDestroyedRequestInfo(cast<CNetScriptHttpRequest>(stack.CurrentNod()));
+
+	return true;
+}
 
 void Main()
 {
@@ -220,10 +373,36 @@ void Main()
 
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePost", FuncCreatePost);
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePost2", FuncCreatePost);
+#if TMNEXT || MP4
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePostFile", FuncCreatePostFile);
+#endif
+#if TMNEXT
 	Dev::InterceptProc("CNetScriptHttpManager", "CreatePut", FuncCreatePut);
+#endif
 
-	while (true) {
-		yield();
+	Dev::InterceptProc("CNetScriptHttpManager", "Destroy", FuncDestroy);
+
+	if (Setting_ImmediateCapture) {
+		g_capturing = true;
+		Setting_WindowVisible = true;
+		Setting_ImmediateCapture = false;
 	}
+}
+
+void OnDestroyed()
+{
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreateGet");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreateGet2");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreateGet3");
+
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost");
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePost2");
+#if TMNEXT || MP4
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePostFile");
+#endif
+#if TMNEXT
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "CreatePut");
+#endif
+
+	Dev::ResetInterceptProc("CNetScriptHttpManager", "Destroy");
 }
